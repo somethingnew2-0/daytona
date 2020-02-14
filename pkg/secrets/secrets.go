@@ -37,7 +37,7 @@ const secretLocationPrefix = "DAYTONA_SECRET_DESTINATION_"
 // SecretFetcher is responsible for fetching sercrets..
 func SecretFetcher(client *api.Client, config cfg.Config) {
 	locations := prefixSecretLocationDefined()
-	if config.SecretPayloadPath == "" && !config.SecretEnv && len(locations) == 0 {
+	if config.SecretPayloadPath == "" && config.SecretPayloadDir == "" && !config.SecretEnv && len(locations) == 0 {
 		log.Println("No secret output method was configured, will not attempt to retrieve secrets")
 		return
 	}
@@ -99,6 +99,14 @@ func SecretFetcher(client *api.Client, config cfg.Config) {
 			log.Fatalln(err)
 		}
 	}
+	
+        // Write all secrets as files to a configured directory
+	if config.SecretPayloadDir != "" {
+		err := writeSecretsAsFiles(secrets, config.SecretPayloadDir)
+		if err != nil {
+			log.Fatalln(err)
+		}
+	}
 
 	// Write all secrets to their specified locations
 	if len(locations) != 0 {
@@ -152,6 +160,10 @@ func writeSecretsToDestination(secrets map[string]string, locations map[string]s
 		if !ok {
 			continue
 		}
+                err = os.MkdirAll(path.Dir(secretDestination, 0600))
+                if err != nil {
+                        return fmt.Errorf("could not create secrets directory for secrets file destination '%s': %s", path.Dir(secretDestination), err)
+                }
 		err := ioutil.WriteFile(secretDestination, []byte(secretValue), 0600)
 		if err != nil {
 			return fmt.Errorf("could not write secrets to file '%s': %s", secretDestination, err)
@@ -166,11 +178,31 @@ func writeJSONSecrets(secrets map[string]string, filepath string) error {
 	if err != nil {
 		return fmt.Errorf("failed to convert secrets payload to json: %s", err)
 	}
+        err = os.MkdirAll(path.Dir(filepath, 0600))
+        if err != nil {
+		return fmt.Errorf("could not create secrets directory for secrets file '%s': %s", path.Dir(filepath), err)
+        }
 	err = ioutil.WriteFile(filepath, payloadJSON, 0600)
 	if err != nil {
 		return fmt.Errorf("could not write secrets to file '%s': %s", filepath, err)
 	}
 	log.Printf("Wrote %d secrets to %s\n", len(secrets), filepath)
+	return nil
+}
+
+func writeSecretsAsFiles(secrets map[string]string, dirpath string) error {
+        err = os.MkdirAll(dirpath, 0600)
+        if err != nil {
+		return fmt.Errorf("could not create secrets directory for secret files '%s': %s", dirpath, err)
+        }
+        for name, value := range secrets {
+          filepath := path.Join(dirpath, name)
+          err = ioutil.WriteFile(filepath, value, 0600)
+          if err != nil {
+                  return fmt.Errorf("could not write '%s' secret to file '%s': %s", name, filepath, err)
+          }
+          log.Printf("Wrote %s secret to %s\n", name, filepath)
+        }
 	return nil
 }
 

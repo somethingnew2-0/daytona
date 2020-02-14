@@ -25,6 +25,7 @@ type Config struct {
 	RenewalIncrement  int64
 	RenewalInterval   int64
 	SecretPayloadPath string
+	SecretPayloadDir  string
 	SecretEnv         bool
 	Workers           int
 	AutoRenew         bool

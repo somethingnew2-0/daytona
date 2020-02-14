@@ -82,6 +82,7 @@ func init() {
 		return b
 	}(), "the value, in seconds, to which the token's ttl should be renewed (env: RENEWAL_INCREMENT)")
 	flag.StringVar(&config.SecretPayloadPath, "secret-path", cfg.BuildDefaultConfigItem("SECRET_PATH", ""), "the full file path to store the JSON blob of the fetched secrets (env: SECRET_PATH)")
+	flag.StringVar(&config.SecretPayloadDir, "secret-dir", cfg.BuildDefaultConfigItem("SECRET_DIR", ""), "the directory to store the fetched secrets as individual files (env: SECRET_DIR)")
 	flag.BoolVar(&config.AutoRenew, "auto-renew", func() bool {
 		b, err := strconv.ParseBool(cfg.BuildDefaultConfigItem("AUTO_RENEW", "false"))
 		return err == nil && b
